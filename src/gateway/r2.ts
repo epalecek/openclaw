@@ -61,6 +61,26 @@ export async function mountR2Storage(sandbox: Sandbox, env: MoltbotEnv): Promise
       return true;
     }
     
+    // If directory not empty, try with nonempty option
+    if (errorMessage.includes('is not empty')) {
+      console.log('Mount point not empty, retrying with nonempty option...');
+      try {
+        await sandbox.mountBucket(R2_BUCKET_NAME, R2_MOUNT_PATH, {
+          endpoint: `https://${env.CF_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+          credentials: {
+            accessKeyId: env.R2_ACCESS_KEY_ID,
+            secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+          },
+          options: ['nonempty'],
+        });
+        console.log('R2 bucket mounted successfully with nonempty option');
+        return true;
+      } catch (retryErr) {
+        console.error('Failed to mount even with nonempty:', retryErr);
+        return false;
+      }
+    }
+    
     console.log('R2 mount error:', errorMessage);
     console.error('Failed to mount R2 bucket:', err);
     return false;
