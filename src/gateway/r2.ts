@@ -47,16 +47,6 @@ export async function mountR2Storage(sandbox: Sandbox, env: MoltbotEnv): Promise
 
   try {
     console.log('Mounting R2 bucket at', R2_MOUNT_PATH);
-
-    // Clear the mount point directory to avoid "directory not empty" errors
-    try {
-      await sandbox.startProcess`rm -rf ${R2_MOUNT_PATH}`;
-      await sandbox.startProcess`mkdir -p ${R2_MOUNT_PATH}`;
-      console.log('Cleared mount point directory');
-    } catch (cleanupErr) {
-      console.log('Mount point cleanup warning (may be ok):', cleanupErr);
-    }
-
     await sandbox.mountBucket(R2_BUCKET_NAME, R2_MOUNT_PATH, {
       endpoint: `https://${env.CF_ACCOUNT_ID}.r2.cloudflarestorage.com`,
       // Pass credentials explicitly since we use R2_* naming instead of AWS_*
