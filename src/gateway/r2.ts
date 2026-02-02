@@ -48,15 +48,13 @@ export async function mountR2Storage(sandbox: Sandbox, env: MoltbotEnv): Promise
   try {
     console.log('Mounting R2 bucket at', R2_MOUNT_PATH);
 
-    // Clear the mount point directory to avoid "directory not empty" errors
+    /// Unmount if already mounted (handles partial/failed mounts)
     try {
-      const cleanup1 = await sandbox.startProcess(`rm -rf ${R2_MOUNT_PATH}`);
-      await new Promise(r => setTimeout(r, 200));
-      const cleanup2 = await sandbox.startProcess(`mkdir -p ${R2_MOUNT_PATH}`);
-      await new Promise(r => setTimeout(r, 200));
-      console.log('Cleared mount point directory');
-    } catch (cleanupErr) {
-      console.log('Mount point cleanup warning (may be ok):', cleanupErr);
+      await sandbox.unmountBucket(R2_MOUNT_PATH);
+      console.log('Unmounted existing bucket at', R2_MOUNT_PATH);
+      await new Promise(r => setTimeout(r, 500)); // Give it time to unmount
+    } catch (unmountErr) {
+      console.log('No existing mount to unmount (this is ok)');
     }
 
     await sandbox.mountBucket(R2_BUCKET_NAME, R2_MOUNT_PATH, {
