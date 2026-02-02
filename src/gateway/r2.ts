@@ -66,10 +66,8 @@ export async function mountR2Storage(sandbox: Sandbox, env: MoltbotEnv): Promise
       console.log('Mount point not empty, clearing and retrying...');
       try {
         // Clear the directory contents
-        //const clearProc = await sandbox.startProcess(`rm -rf ${R2_MOUNT_PATH}/*`);
-		const clearProc = await sandbox.startProcess(`find ${R2_MOUNT_PATH} -mindepth 1 -delete`);
+        const clearProc = await sandbox.startProcess(`rm -rf ${R2_MOUNT_PATH}/*`);
         await new Promise(r => setTimeout(r, 500));
-
         
         // Retry mount
         await sandbox.mountBucket(R2_BUCKET_NAME, R2_MOUNT_PATH, {
