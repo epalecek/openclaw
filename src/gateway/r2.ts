@@ -48,13 +48,19 @@ export async function mountR2Storage(sandbox: Sandbox, env: MoltbotEnv): Promise
   try {
     console.log('Mounting R2 bucket at', R2_MOUNT_PATH);
 
-    /// Unmount if already mounted (handles partial/failed mounts)
-    try {
-      await sandbox.unmountBucket(R2_MOUNT_PATH);
-      console.log('Unmounted existing bucket at', R2_MOUNT_PATH);
-      await new Promise(r => setTimeout(r, 500)); // Give it time to unmount
-    } catch (unmountErr) {
-      console.log('No existing mount to unmount (this is ok)');
+	// Claude/EP
+    // Check if mounted and unmount if needed
+    const isMounted = await isR2Mounted(sandbox);
+    if (isMounted) {
+      console.log('Bucket already mounted, unmounting first...');
+      try {
+        await sandbox.unmountBucket(R2_MOUNT_PATH);
+        console.log('Successfully unmounted');
+        await new Promise(r => setTimeout(r, 1000)); // Longer wait
+      } catch (unmountErr) {
+        console.log('Unmount failed:', unmountErr);
+        // Try to continue anyway
+      }
     }
 
     await sandbox.mountBucket(R2_BUCKET_NAME, R2_MOUNT_PATH, {
