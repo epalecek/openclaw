@@ -39,51 +39,29 @@ export async function mountR2Storage(sandbox: Sandbox, env: MoltbotEnv): Promise
     return false;
   }
 
-  // Check if already mounted first - this avoids errors and is faster
-  if (await isR2Mounted(sandbox)) {
-    console.log('R2 bucket already mounted at', R2_MOUNT_PATH);
-    return true;
-  }
-
   try {
     console.log('Mounting R2 bucket at', R2_MOUNT_PATH);
-
-	// Claude/EP
-    // Check if mounted and unmount if needed
-    const isMounted = await isR2Mounted(sandbox);
-    if (isMounted) {
-      console.log('Bucket already mounted, unmounting first...');
-      try {
-        await sandbox.unmountBucket(R2_MOUNT_PATH);
-        console.log('Successfully unmounted');
-        await new Promise(r => setTimeout(r, 1000)); // Longer wait
-      } catch (unmountErr) {
-        console.log('Unmount failed:', unmountErr);
-        // Try to continue anyway
-      }
-    }
-
+    
     await sandbox.mountBucket(R2_BUCKET_NAME, R2_MOUNT_PATH, {
       endpoint: `https://${env.CF_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-      // Pass credentials explicitly since we use R2_* naming instead of AWS_*
       credentials: {
         accessKeyId: env.R2_ACCESS_KEY_ID,
         secretAccessKey: env.R2_SECRET_ACCESS_KEY,
       },
     });
+    
     console.log('R2 bucket mounted successfully - moltbot data will persist across sessions');
     return true;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
-    console.log('R2 mount error:', errorMessage);
     
-    // Check again if it's mounted - the error might be misleading
-    if (await isR2Mounted(sandbox)) {
-      console.log('R2 bucket is mounted despite error');
+    // If already mounted, that's fine - just return true
+    if (errorMessage.includes('already in use')) {
+      console.log('R2 bucket already mounted (this is ok)');
       return true;
     }
     
-    // Don't fail if mounting fails - moltbot can still run without persistent storage
+    console.log('R2 mount error:', errorMessage);
     console.error('Failed to mount R2 bucket:', err);
     return false;
   }
