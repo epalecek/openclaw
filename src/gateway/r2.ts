@@ -35,7 +35,7 @@ async function isR2Mounted(sandbox: Sandbox): Promise<boolean> {
 export async function mountR2Storage(sandbox: Sandbox, env: MoltbotEnv): Promise<boolean> {
   // Skip if R2 credentials are not configured
   if (!env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY || !env.CF_ACCOUNT_ID) {
-    console.log('R2 storage not configured (missing R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, or CF_ACCOUNT_ID)');
+    console.log('R2 storage not configured');
     return false;
   }
 
@@ -50,38 +50,41 @@ export async function mountR2Storage(sandbox: Sandbox, env: MoltbotEnv): Promise
       },
     });
     
-    console.log('R2 bucket mounted successfully - moltbot data will persist across sessions');
+    console.log('R2 bucket mounted successfully');
     return true;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     
-    // If already mounted, that's fine - just return true
+    // If already mounted, that's fine
     if (errorMessage.includes('already in use')) {
-      console.log('R2 bucket already mounted (this is ok)');
+      console.log('R2 bucket already mounted');
       return true;
     }
     
-    // If directory not empty, try with nonempty option
+    // If directory not empty, clear it and retry
     if (errorMessage.includes('is not empty')) {
-      console.log('Mount point not empty, retrying with nonempty option...');
+      console.log('Mount point not empty, clearing and retrying...');
       try {
+        // Clear the directory
+        const clearProc = await sandbox.startProcess(`rm -rf ${R2_MOUNT_PATH}/*`);
+        await new Promise(r => setTimeout(r, 500));
+        
+        // Retry mount
         await sandbox.mountBucket(R2_BUCKET_NAME, R2_MOUNT_PATH, {
           endpoint: `https://${env.CF_ACCOUNT_ID}.r2.cloudflarestorage.com`,
           credentials: {
             accessKeyId: env.R2_ACCESS_KEY_ID,
             secretAccessKey: env.R2_SECRET_ACCESS_KEY,
           },
-          options: ['nonempty'],
         });
-        console.log('R2 bucket mounted successfully with nonempty option');
+        console.log('R2 bucket mounted successfully after clearing');
         return true;
       } catch (retryErr) {
-        console.error('Failed to mount even with nonempty:', retryErr);
+        console.error('Failed to mount after clearing:', retryErr);
         return false;
       }
     }
     
-    console.log('R2 mount error:', errorMessage);
     console.error('Failed to mount R2 bucket:', err);
     return false;
   }
