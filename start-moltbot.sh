@@ -189,6 +189,9 @@ if (process.env.TELEGRAM_BOT_TOKEN) {
     config.channels.telegram.enabled = true;
 	//config.channels.telegram.dm = config.channels.telegram.dm || {};
     config.channels.telegram.dmPolicy = process.env.TELEGRAM_DM_POLICY || 'pairing';
+	if (process.env.TELEGRAM_DM_ALLOW_FROM) {
+        config.channels.telegram.allowFrom = process.env.TELEGRAM_DM_ALLOW_FROM.split(',');
+    }
 }
 
 // Discord configuration
@@ -196,7 +199,7 @@ if (process.env.DISCORD_BOT_TOKEN) {
     config.channels.discord = config.channels.discord || {};
     config.channels.discord.token = process.env.DISCORD_BOT_TOKEN;
     config.channels.discord.enabled = true;
-    config.channels.discord.dm = config.channels.discord.dm || {};
+    //config.channels.discord.dm = config.channels.discord.dm || {};
     config.channels.discord.dm.policy = process.env.DISCORD_DM_POLICY || 'pairing';
 }
 
